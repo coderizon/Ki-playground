@@ -18,4 +18,5 @@ export const MODE_NAMES = {
   gesture: 'Gestenerkennung',
   pose: 'Posen-Erkennung',
   face: 'Gesichtserkennung',
+  object_detection: 'Objekterkennung',
 };

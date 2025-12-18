@@ -39,6 +39,7 @@ import { clearOverlay } from './ml/overlay.js';
 import { ensureHandLandmarker, runGestureLoop, stopGestureLoop } from './ml/gesture.js';
 import { ensurePoseLandmarker, runPoseLoop, stopPoseLoop } from './ml/pose.js';
 import { ensureFaceLandmarker, runFaceLoop, stopFaceLoop } from './ml/face.js';
+import { ensureObjectDetector, runObjectLoop, stopObjectLoop } from './ml/object_detection.js';
 import { loadMobileNetFeatureModel, rebuildModel } from './ml/model.js';
 import {
   handleCollectEnd,
@@ -288,7 +289,7 @@ function addClassAndReset() {
 }
 
 async function setMode(newMode) {
-  const supportedModes = ['image', 'gesture', 'pose', 'face'];
+  const supportedModes = ['image', 'gesture', 'pose', 'face', 'object_detection'];
   if (!supportedModes.includes(newMode)) return;
   if (newMode === state.currentMode) {
     updateModeMenuActive();
@@ -297,6 +298,7 @@ async function setMode(newMode) {
   stopGestureLoop();
   stopPoseLoop();
   stopFaceLoop();
+  stopObjectLoop();
   state.currentMode = newMode;
   if (modeLabel) {
     modeLabel.textContent = MODE_NAMES[newMode] || newMode;
@@ -314,7 +316,7 @@ async function setMode(newMode) {
   updateExampleCounts(true);
   resetClassCards(classCardHandlers);
   unlockCapturePanels();
-  const clearedNames = newMode === 'face' ? [] : state.classNames;
+  const clearedNames = newMode === 'face' || newMode === 'object_detection' ? [] : state.classNames;
   renderProbabilities([], -1, clearedNames);
   PREVIEW_VIDEO.classList.add('hidden');
   clearOverlay();
@@ -376,6 +378,23 @@ async function setMode(newMode) {
       runFaceLoop();
       if (STATUS) {
         STATUS.innerText = 'Gesichtserkennung aktiv. Vorschau läuft.';
+      }
+    }
+  } else if (newMode === 'object_detection') {
+    if (GESTURE_OVERLAY) {
+      GESTURE_OVERLAY.classList.remove('hidden');
+      clearOverlay();
+    }
+    setMobileStep('preview');
+    enableCam();
+    preparePreviewForFace();
+    const detector = await ensureObjectDetector();
+    if (state.currentMode === 'object_detection' && detector) {
+      state.predict = true;
+      renderProbabilities([], -1, []);
+      runObjectLoop();
+      if (STATUS) {
+        STATUS.innerText = 'Objekterkennung aktiv. Vorschau läuft.';
       }
     }
   } else {
@@ -446,10 +465,22 @@ function resetApp() {
     if (STATUS) {
       STATUS.innerText = 'Gesichtserkennung aktiv.';
     }
+  } else if (state.currentMode === 'object_detection') {
+    if (GESTURE_OVERLAY) {
+      GESTURE_OVERLAY.classList.remove('hidden');
+      clearOverlay();
+    }
+    PREVIEW_VIDEO.classList.remove('hidden');
+    state.predict = true;
+    preparePreviewForFace();
+    runObjectLoop();
+    if (STATUS) {
+      STATUS.innerText = 'Objekterkennung aktiv.';
+    }
   }
   updateExampleCounts(true);
   state.lastPrediction = [];
-  if (state.currentMode === 'face') {
+  if (state.currentMode === 'face' || state.currentMode === 'object_detection') {
     renderProbabilities([], -1, []);
     setMobileStep('preview');
   } else {

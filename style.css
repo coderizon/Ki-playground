@@ -141,12 +141,20 @@ body {
 
 body[data-mode="face"] .classes-column,
 body[data-mode="face"] .training-column,
-body[data-mode="face"] .mobile-nav {
+body[data-mode="face"] .mobile-nav,
+body[data-mode="object_detection"] .classes-column,
+body[data-mode="object_detection"] .training-column,
+body[data-mode="object_detection"] .mobile-nav {
   display: none !important;
 }
 
-body[data-mode="face"] .preview-column {
+body[data-mode="face"] .preview-column,
+body[data-mode="object_detection"] .preview-column {
   display: flex;
+}
+
+body[data-mode="object_detection"] .video-shell canvas {
+  transform: none;
 }
 
 .mobile-nav {

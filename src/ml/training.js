@@ -27,9 +27,12 @@ export async function trainAndPredict() {
 
   if (state.trainingCompleted || state.trainingInProgress) return;
 
-  if (state.currentMode === 'face') {
+  if (state.currentMode === 'face' || state.currentMode === 'object_detection') {
     if (STATUS) {
-      STATUS.innerText = 'Gesichtserkennung läuft ohne Training.';
+      STATUS.innerText =
+        state.currentMode === 'face'
+          ? 'Gesichtserkennung läuft ohne Training.'
+          : 'Objekterkennung läuft ohne Training.';
     }
     return;
   }
