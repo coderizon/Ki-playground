@@ -25,6 +25,13 @@ export const state = {
   handVision: null,
   gestureSamples: [],
   gestureLastSampleTs: 0,
+  poseLandmarker: null,
+  poseInitPromise: null,
+  poseBusy: false,
+  poseDrawingUtils: null,
+  poseVision: null,
+  poseSamples: [],
+  poseLastSampleTs: 0,
   faceLandmarker: null,
   faceInitPromise: null,
   faceBusy: false,
@@ -59,4 +66,6 @@ export function disposeTrainingData() {
   state.trainingDataOutputs.length = 0;
   state.gestureSamples.length = 0;
   state.gestureLastSampleTs = 0;
+  state.poseSamples.length = 0;
+  state.poseLastSampleTs = 0;
 }

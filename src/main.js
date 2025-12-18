@@ -37,6 +37,7 @@ import {
 } from './domRefs.js';
 import { clearOverlay } from './ml/overlay.js';
 import { ensureHandLandmarker, runGestureLoop, stopGestureLoop } from './ml/gesture.js';
+import { ensurePoseLandmarker, runPoseLoop, stopPoseLoop } from './ml/pose.js';
 import { ensureFaceLandmarker, runFaceLoop, stopFaceLoop } from './ml/face.js';
 import { loadMobileNetFeatureModel, rebuildModel } from './ml/model.js';
 import {
@@ -275,6 +276,9 @@ function addClassAndReset() {
   } else if (state.currentMode === 'gesture' && state.model) {
     state.model.dispose();
     state.model = null;
+  } else if (state.currentMode === 'pose' && state.model) {
+    state.model.dispose();
+    state.model = null;
   }
   renderProbabilities([], -1, state.classNames);
   if (STATUS) {
@@ -284,13 +288,14 @@ function addClassAndReset() {
 }
 
 async function setMode(newMode) {
-  const supportedModes = ['image', 'gesture', 'face'];
+  const supportedModes = ['image', 'gesture', 'pose', 'face'];
   if (!supportedModes.includes(newMode)) return;
   if (newMode === state.currentMode) {
     updateModeMenuActive();
     return;
   }
   stopGestureLoop();
+  stopPoseLoop();
   stopFaceLoop();
   state.currentMode = newMode;
   if (modeLabel) {
@@ -330,6 +335,26 @@ async function setMode(newMode) {
     if (state.currentMode === 'gesture') {
       if (STATUS) {
         STATUS.innerText = 'Gestenerkennung aktiv. Sammle Daten und trainiere.';
+      }
+      if (state.model) {
+        state.model.dispose();
+        state.model = null;
+      }
+    }
+  } else if (newMode === 'pose') {
+    if (GESTURE_OVERLAY) {
+      GESTURE_OVERLAY.classList.remove('hidden');
+      clearOverlay();
+    }
+    setMobileStep('collect');
+    enableCam();
+    const landmarker = await ensurePoseLandmarker();
+    if (state.currentMode === 'pose' && landmarker) {
+      runPoseLoop();
+    }
+    if (state.currentMode === 'pose') {
+      if (STATUS) {
+        STATUS.innerText = 'Posen-Erkennung aktiv. Sammle Daten und trainiere.';
       }
       if (state.model) {
         state.model.dispose();
@@ -388,6 +413,17 @@ function resetApp() {
       GESTURE_OVERLAY.classList.add('hidden');
     }
   } else if (state.currentMode === 'gesture') {
+    if (state.model) {
+      state.model.dispose();
+      state.model = null;
+    }
+    setTrainButtonState(true);
+    toggleCaptureControls(true);
+    if (GESTURE_OVERLAY) {
+      GESTURE_OVERLAY.classList.remove('hidden');
+      clearOverlay();
+    }
+  } else if (state.currentMode === 'pose') {
     if (state.model) {
       state.model.dispose();
       state.model = null;

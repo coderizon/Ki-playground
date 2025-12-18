@@ -19,6 +19,7 @@ import { renderProbabilities } from '../ui/probabilities.js';
 import { setMobileStep } from '../ui/steps.js';
 
 import { predictGesture, trainGestureModel } from './gesture.js';
+import { predictPose, trainPoseModel } from './pose.js';
 
 const defaultTrainLabel = TRAIN_BUTTON ? TRAIN_BUTTON.textContent : 'Modell trainieren';
 
@@ -35,6 +36,11 @@ export async function trainAndPredict() {
 
   if (state.currentMode === 'gesture') {
     await trainGestureWorkflow();
+    return;
+  }
+
+  if (state.currentMode === 'pose') {
+    await trainPoseWorkflow();
     return;
   }
 
@@ -57,6 +63,43 @@ async function trainGestureWorkflow() {
 
   try {
     await trainGestureModel({
+      batchSize,
+      epochs,
+      learningRate: state.trainingLearningRate,
+      onEpochEnd: (epoch, logs) => updateTrainingProgressUi(epoch + 1, epochs, logs),
+    });
+
+    state.predict = true;
+    state.trainingCompleted = true;
+    completeTrainingUi(epochs);
+    lockCapturePanels();
+    showPreview();
+    setMobileStep('preview');
+    predictLoop();
+  } catch (error) {
+    handleTrainingError(error);
+  } finally {
+    state.trainingInProgress = false;
+    setTrainingButtonState(false);
+  }
+}
+
+async function trainPoseWorkflow() {
+  if (!state.poseSamples.length) {
+    if (STATUS) {
+      STATUS.innerText = 'Bitte sammle zuerst Posen-Beispiele.';
+    }
+    return;
+  }
+
+  const { batchSize, epochs } = getTrainingHyperparams();
+  state.predict = false;
+  state.trainingInProgress = true;
+  setTrainingButtonState(true);
+  startTrainingUi(epochs);
+
+  try {
+    await trainPoseModel({
       batchSize,
       epochs,
       learningRate: state.trainingLearningRate,
@@ -259,12 +302,27 @@ export function showPreview() {
 export async function predictLoop() {
   if (!state.predict) return;
 
-
-
   if (state.currentMode === 'gesture') {
     if (state.previewReady && state.trainingCompleted) {
       try {
         const result = await predictGesture();
+        if (result) {
+          renderProbabilities(result.probabilities, result.bestIndex, state.classNames);
+        } else {
+          renderProbabilities([], -1, state.classNames);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    window.requestAnimationFrame(predictLoop);
+    return;
+  }
+
+  if (state.currentMode === 'pose') {
+    if (state.previewReady && state.trainingCompleted) {
+      try {
+        const result = await predictPose();
         if (result) {
           renderProbabilities(result.probabilities, result.bestIndex, state.classNames);
         } else {
