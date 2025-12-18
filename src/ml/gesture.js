@@ -8,7 +8,7 @@ import { updateExampleCounts } from '../ui/classes.js';
 const HAND_MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 const MP_VERSION = '0.10.8';
-const FEATURE_SIZE = 63; // 21 Landmark-Punkte * 3 (x, y, z)
+const FEATURE_SIZE = 126; // 2 Hände * 21 Landmark-Punkte * 3 (x, y, z)
 const SAMPLE_INTERVAL_MS = 120;
 let gestureLoopHandle = null;
 let captureDrawingUtils = null;
@@ -34,7 +34,7 @@ export async function ensureHandLandmarker() {
           modelAssetPath: HAND_MODEL_URL,
           delegate: 'CPU',
         },
-        numHands: 1,
+        numHands: 2,
         runningMode: 'VIDEO',
       });
 
@@ -69,7 +69,7 @@ export async function ensureHandLandmarker() {
   return state.handInitPromise;
 }
 
-function drawSkeletonOnCanvas(landmarks) {
+function drawSkeletonOnCanvas(handsLandmarks) {
   if (!captureCanvas) return;
   const ctx = captureCanvas.getContext('2d');
   if (!ctx) return;
@@ -84,7 +84,7 @@ function drawSkeletonOnCanvas(landmarks) {
 
   ctx.clearRect(0, 0, captureCanvas.width || width || 0, captureCanvas.height || height || 0);
 
-  if (!landmarks || !landmarks.length) return;
+  if (!handsLandmarks || !handsLandmarks.length) return;
 
   const HandLandmarker = state.handVision?.HandLandmarker;
   if (!HandLandmarker || !state.handVision) return;
@@ -93,13 +93,16 @@ function drawSkeletonOnCanvas(landmarks) {
     captureDrawingUtils = new state.handVision.DrawingUtils(ctx);
   }
 
-  captureDrawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
-    color: '#55c3ff',
-    lineWidth: 3,
-  });
-  captureDrawingUtils.drawLandmarks(landmarks, {
-    color: '#0066ff',
-    lineWidth: 2,
+  handsLandmarks.forEach((landmarks) => {
+    if (!landmarks || !landmarks.length) return;
+    captureDrawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
+      color: '#55c3ff',
+      lineWidth: 3,
+    });
+    captureDrawingUtils.drawLandmarks(landmarks, {
+      color: '#0066ff',
+      lineWidth: 2,
+    });
   });
 }
 
@@ -244,10 +247,13 @@ async function detectHandLandmarks(videoEl) {
   try {
     const nowInMs = performance.now();
     const result = landmarker.detectForVideo(videoEl, nowInMs);
-    const landmarks = result?.landmarks?.[0];
-    if (!landmarks || !landmarks.length) return null;
+    const handsLandmarks = result?.landmarks || [];
+    if (!handsLandmarks.length) return null;
 
-    return { landmarks, vector: flattenLandmarks(landmarks) };
+    const vector = flattenHandsLandmarks(handsLandmarks, result?.handednesses);
+    if (!vector.length) return null;
+
+    return { landmarks: handsLandmarks, vector };
   } catch (error) {
     console.error(error);
     return null;
@@ -256,18 +262,58 @@ async function detectHandLandmarks(videoEl) {
   }
 }
 
-function flattenLandmarks(landmarks = []) {
+function normalizeHandedness(handedness = []) {
+  const raw = handedness?.[0]?.categoryName || handedness?.[0]?.displayName;
+  if (!raw) return null;
+  const lower = String(raw).toLowerCase();
+  if (lower.includes('left')) return 'Left';
+  if (lower.includes('right')) return 'Right';
+  return null;
+}
+
+function flattenLandmarks(landmarks = [], expectedPoints = 21) {
   const flat = [];
-  for (let i = 0; i < landmarks.length; i++) {
-    const point = landmarks[i];
-    flat.push(point.x ?? 0);
-    flat.push(point.y ?? 0);
-    flat.push(point.z ?? 0);
+  for (let i = 0; i < expectedPoints; i++) {
+    const point = landmarks?.[i];
+    flat.push(point?.x ?? 0);
+    flat.push(point?.y ?? 0);
+    flat.push(point?.z ?? 0);
   }
   return flat;
 }
 
-function drawHandOverlay(landmarks = []) {
+function flattenHandsLandmarks(handsLandmarks = [], handednesses = []) {
+  let left = null;
+  let right = null;
+  const unknown = [];
+
+  handsLandmarks.forEach((landmarks, idx) => {
+    const label = normalizeHandedness(handednesses?.[idx]);
+    if (label === 'Left' && !left) {
+      left = landmarks;
+      return;
+    }
+    if (label === 'Right' && !right) {
+      right = landmarks;
+      return;
+    }
+    unknown.push(landmarks);
+  });
+
+  if (!left && unknown.length) {
+    left = unknown.shift();
+  }
+  if (!right && unknown.length) {
+    right = unknown.shift();
+  }
+
+  const zeros = Array(21 * 3).fill(0);
+  const leftVec = left ? flattenLandmarks(left) : zeros;
+  const rightVec = right ? flattenLandmarks(right) : zeros;
+  return [...leftVec, ...rightVec];
+}
+
+function drawHandOverlay(handsLandmarks = []) {
   if (!GESTURE_OVERLAY) return;
   resizeOverlay();
   const ctx = GESTURE_OVERLAY.getContext('2d');
@@ -277,13 +323,16 @@ function drawHandOverlay(landmarks = []) {
   const HandLandmarker = state.handVision?.HandLandmarker;
   if (!HandLandmarker || !state.handDrawingUtils) return;
 
-  state.handDrawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
-    color: '#55c3ff',
-    lineWidth: 3,
-  });
-  state.handDrawingUtils.drawLandmarks(landmarks, {
-    color: '#0066ff',
-    lineWidth: 2,
+  handsLandmarks.forEach((landmarks) => {
+    if (!landmarks || !landmarks.length) return;
+    state.handDrawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
+      color: '#55c3ff',
+      lineWidth: 3,
+    });
+    state.handDrawingUtils.drawLandmarks(landmarks, {
+      color: '#0066ff',
+      lineWidth: 2,
+    });
   });
 }
 
