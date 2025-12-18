@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Transfer Learning - TensorFlow.js</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Import the webpage's stylesheet -->
+    <link rel="stylesheet" href="/style.css">
+  </head>  
+  <body data-step="collect" class="landing-active">
+    <div id="landing-page" role="dialog" aria-label="Landing">
+      <div class="landing-shell">
+        <header class="landing-header">
+          <button class="icon-button landing-menu nav-toggle" aria-label="Menü öffnen" type="button">
+            <span class="icon-lines"></span>
+          </button>
+        </header>
+
+        <div class="landing-identity" aria-label="AI Playground">
+          <span class="identity-word">AI</span>
+          <img class="identity-logo" src="assets/images/cr.png" alt="Code Rizon Logo">
+          <span class="identity-word accent">Playground</span>
+        </div>
+
+        <button class="search-pill" type="button" data-mode="image" aria-label="Suche KI-Modell">
+          <span class="search-label">Suche KI-Modell</span>
+          <span class="pill-arrow" aria-hidden="true">></span>
+        </button>
+
+        <div class="model-marquee" role="list">
+          <div class="model-track">
+            <div class="marquee-group">
+              <div class="model-card has-hero" data-mode="image" role="listitem" tabindex="0">
+                <div class="model-card-hero">
+                  <img src="assets/images/Bildklassifikation.png" alt="Bildklassifikation Vorschau">
+                </div>
+                <div class="model-card-body">
+                  <h3 class="model-card-title">Bildklassifikation</h3>
+                  <p class="model-card-description">Bilder automatisch klassifizieren.</p>
+                  <div class="model-card-actions">
+                    <span class="md-tag primary">Trainierbar</span>
+                    <span class="md-tag">BLE connect</span>
+                  </div>
+                </div>
+              </div>
+              <div class="model-card has-hero" data-mode="image" role="listitem" tabindex="0">
+                <div class="model-card-hero">
+                  <img src="assets/images/objektdetektion.png" alt="Objekterkennung Vorschau">
+                </div>
+                <div class="model-card-body">
+                  <h3 class="model-card-title">Objekterkennung</h3>
+                  <p class="model-card-description">Objekte lokalisieren und benennen.</p>
+                  <div class="model-card-actions">
+                    <span class="md-tag primary">Trainierbar</span>
+                    <span class="md-tag">BLE connect</span>
+                  </div>
+                </div>
+              </div>
+              <div class="model-card has-hero" data-mode="gesture" role="listitem" tabindex="0">
+                <div class="model-card-hero">
+                  <img src="assets/images/Gestenerkennung.png" alt="Gestenerkennung Vorschau">
+                </div>
+                <div class="model-card-body">
+                  <h3 class="model-card-title">Gestenerkennung</h3>
+                  <p class="model-card-description">Erkenne und identifiziere Handgesten.</p>
+                  <div class="model-card-actions">
+                    <span class="md-tag primary">Trainierbar</span>
+                    <span class="md-tag">BLE connect</span>
+                  </div>
+                </div>
+              </div>
+              <div class="model-card has-hero" data-mode="face" role="listitem" tabindex="0">
+                <div class="model-card-hero face-placeholder">
+                  <span class="model-card-placeholder-text">Gesichtserkennung · Bild folgt</span>
+                </div>
+                <div class="model-card-body">
+                  <h3 class="model-card-title">Gesichtserkennung</h3>
+                  <p class="model-card-description">Gesichtslivebild mit Blendshape-Preview.</p>
+                  <div class="model-card-actions">
+                    <span class="md-tag primary">Nur Inferenz</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="model-card is-disabled has-hero" data-mode="audio" data-available="false" role="listitem" tabindex="-1" aria-disabled="true">
+                <div class="model-card-hero">
+                  <img src="assets/images/audioerkennung.png" alt="Audioerkennung Vorschau">
+                </div>
+                <div class="model-card-body">
+                  <h3 class="model-card-title">Audioerkennung</h3>
+                  <p class="model-card-description">Geräusche oder Sprache erkennen.</p>
+                  <div class="model-card-actions">
+                    <span class="md-tag primary" aria-disabled="true">Trainierbar</span>
+                    <span class="md-tag" aria-disabled="true">BLE connect</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="marquee-group">
+              <div class="model-card has-hero" data-mode="image" role="listitem" tabindex="0">
+                <div class="model-card-hero">
+                  <img src="assets/images/Bildklassifikation.png" alt="Bildklassifikation Vorschau">
+                </div>
+                <div class="model-card-body">
+                  <h3 class="model-card-title">Bildklassifikation</h3>
+                  <p class="model-card-description">Bilder automatisch klassifizieren.</p>
+                  <div class="model-card-actions">
+                    <span class="md-tag primary">Trainierbar</span>
+                    <span class="md-tag">BLE connect</span>
+                  </div>
+                </div>
+              </div>
+              <div class="model-card has-hero" data-mode="image" role="listitem" tabindex="0">
+                <div class="model-card-hero">
+                  <img src="assets/images/objektdetektion.png" alt="Objekterkennung Vorschau">
+                </div>
+                <div class="model-card-body">
+                  <h3 class="model-card-title">Objekterkennung</h3>
+                  <p class="model-card-description">Objekte lokalisieren und benennen.</p>
+                  <div class="model-card-actions">
+                    <span class="md-tag primary">Trainierbar</span>
+                    <span class="md-tag">BLE connect</span>
+                  </div>
+                </div>
+              </div>
+              <div class="model-card has-hero" data-mode="gesture" role="listitem" tabindex="0">
+                <div class="model-card-hero">
+                  <img src="assets/images/Gestenerkennung.png" alt="Gestenerkennung Vorschau">
+                </div>
+                <div class="model-card-body">
+                  <h3 class="model-card-title">Gestenerkennung</h3>
+                  <p class="model-card-description">Erkenne und identifiziere Handgesten.</p>
+                  <div class="model-card-actions">
+                    <span class="md-tag primary">Trainierbar</span>
+                    <span class="md-tag">BLE connect</span>
+                  </div>
+                </div>
+              </div>
+              <div class="model-card has-hero" data-mode="face" role="listitem" tabindex="0">
+                <div class="model-card-hero face-placeholder">
+                  <span class="model-card-placeholder-text">Gesichtserkennung · Bild folgt</span>
+                </div>
+                <div class="model-card-body">
+                  <h3 class="model-card-title">Gesichtserkennung</h3>
+                  <p class="model-card-description">Gesichtslivebild mit Blendshape-Preview.</p>
+                  <div class="model-card-actions">
+                    <span class="md-tag primary">Nur Inferenz</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="model-card is-disabled has-hero" data-mode="audio" data-available="false" role="listitem" tabindex="-1" aria-disabled="true">
+                <div class="model-card-hero">
+                  <img src="assets/images/audioerkennung.png" alt="Audioerkennung Vorschau">
+                </div>
+                <div class="model-card-body">
+                  <h3 class="model-card-title">Audioerkennung</h3>
+                  <p class="model-card-description">Geräusche oder Sprache erkennen.</p>
+                  <div class="model-card-actions">
+                    <span class="md-tag primary" aria-disabled="true">Trainierbar</span>
+                    <span class="md-tag" aria-disabled="true">BLE connect</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="app-shell" class="hidden">
+      <header class="topbar">
+        <button class="icon-button nav-toggle" aria-label="Menü öffnen" type="button">
+          <span class="icon-lines"></span>
+        </button>
+        <div class="brand">
+          <span class="brand-title">AI Playground</span>
+        </div>
+        <div class="mode-picker">
+          <button id="modeLabel" class="mode-label" type="button" aria-haspopup="true" aria-expanded="false">Bildklassifikation</button>
+          <div id="modeMenu" class="mode-menu hidden" role="menu" aria-label="Modus wählen">
+            <button data-mode="image" role="menuitem">Bildklassifikation</button>
+            <button data-mode="gesture" role="menuitem">Gestenerkennung</button>
+            <button data-mode="face" role="menuitem">Gesichtserkennung</button>
+
+          </div>
+        </div>
+      </header>
+
+      <div class="mobile-nav">
+        <button class="mobile-step active" data-step-target="collect">1 Daten</button>
+        <button class="mobile-step" data-step-target="train">2 Trainieren</button>
+        <button class="mobile-step" data-step-target="preview">3 Testen</button>
+      </div>
+
+      <main class="layout">
+        <section class="classes-column" data-step-section="collect">
+
+          <div class="card class-card">
+            <div class="card-header">
+              <div class="title-group editable">
+                <input class="class-name-input" data-class-index="0" value="Class 1" aria-label="Klassenname eingeben">
+                
+              </div>
+              <span class="dots">⋮</span>
+            </div>
+            <div class="action-row">
+              <button class="open-webcam ghost" data-class-index="0">Webcam</button>
+            </div>
+            <div class="webcam-panel" data-class-panel="0">
+              <div class="panel-top">
+                <span>Webcam</span>
+                <div class="panel-actions">
+                  <button class="ghost switch-camera" data-switch-camera aria-label="Kamera wechseln">Außenkamera</button>
+                  <button class="icon-close" data-close-panel="0" aria-label="Panel schließen">×</button>
+                </div>
+              </div>
+              <div class="count-row">
+                <span class="count-chip" data-count-for="0">0 Beispiele</span>
+              </div>
+              <div class="capture-slot" data-class-slot="0">
+                <video id="captureCam" autoplay muted playsinline class="hidden"></video>
+              </div>
+              <button class="dataCollector primary block" data-1hot="0" data-name="Class 1">Zum Aufnehmen halten</button>
+            </div>
+          </div>
+
+          <div class="card dashed muted" id="add-class" role="button" tabindex="0" aria-label="Klasse hinzufügen">
+            <span class="add-placeholder">＋ Klasse hinzufügen</span>
+          </div>
+        </section>
+
+        <section class="training-column" data-step-section="train">
+          <div class="card training-card">
+            <div class="card-header spaced">
+              <h3>Training</h3>
+              <button id="train" class="primary">Modell trainieren</button>
+            </div>
+            <div id="trainingProgress" class="training-progress hidden" aria-live="polite">
+              <div class="training-progress-meta">
+                <span id="trainingProgressLabel">Bereit zum Trainieren</span>
+                <span id="trainingProgressValue" class="training-progress-value">0%</span>
+              </div>
+              <div class="training-progress-bar">
+                <div id="trainingProgressFill" class="training-progress-fill"></div>
+              </div>
+            </div>
+
+            <details open class="accordion">
+              <summary>Erweitert</summary>
+              <div class="form-grid">
+                <label>
+                  <span>Epochen</span>
+                  <input id="epochsInput" type="number" value="10" min="1" step="1">
+                </label>
+                <label>
+                  <span>Batchgröße</span>
+                  <input id="batchSizeInput" type="number" value="5" min="1" step="1">
+                </label>
+                <label>
+                  <span>Lernrate</span>
+                  <input id="learningRateInput" type="number" value="0.001" min="0.0001" step="0.0001">
+                </label>
+              </div>
+            </details>
+
+            <div class="reset-row">
+              <div class="helper">Auf Standardwerte zurücksetzen</div>
+              <button id="reset" class="ghost">Zurücksetzen</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="preview-column" data-step-section="preview">
+          <div class="card preview-card">
+            <div class="card-header">
+              <div class="card-actions">
+                <button id="bleConnect" class="primary">BLE connect</button>
+              </div>
+            </div>
+            <div class="preview-body">
+              <div class="video-shell">
+                <video id="previewCam" autoplay muted playsinline class="hidden"></video>
+                <canvas id="gestureOverlay" class="overlay-canvas hidden"></canvas>
+              </div>
+              <div class="preview-output">
+                <div class="preview-output-header">
+                  <span class="preview-output-title">Ausgabe</span>
+                  <span class="preview-output-hint">Wahrscheinlichkeiten pro Klasse</span>
+                </div>
+                <div id="probabilityList" class="probability-list"></div>
+              </div>
+              <p id="status" class="sr-only">Du musst links ein Modell trainieren, um es hier als Vorschau ansehen zu können.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="sideMenuBackdrop" class="side-menu-backdrop hidden" aria-hidden="true"></div>
+    <nav id="sideMenu" class="side-menu hidden" aria-label="Navigation">
+      <button class="side-menu-close" type="button" aria-label="Menü schließen">×</button>
+      <button class="side-menu-item" type="button" data-nav="home">
+        <span class="side-menu-icon" aria-hidden="true">⌂</span>
+        <span class="side-menu-label">Home</span>
+      </button>
+    </nav>
+
+    <div id="bleModalBackdrop" class="ble-modal-backdrop hidden" aria-hidden="true"></div>
+    <section id="bleModal" class="ble-modal hidden" role="dialog" aria-modal="true" aria-labelledby="bleModalTitle">
+      <div class="ble-modal-shell">
+        <div class="ble-modal-header">
+          <h3 id="bleModalTitle">Verbinden mit</h3>
+          <button id="bleModalClose" class="icon-close" type="button" aria-label="Dialog schließen">×</button>
+        </div>
+        <div class="ble-device-list">
+          <button id="bleArduinoCard" class="ble-device" type="button">
+            <div class="ble-device-info">
+              <span class="ble-device-name">Arduino Uno R4</span>
+              <span class="ble-device-status">Bereit</span>
+            </div>
+            <div class="ble-device-thumb thumb-arduino">
+              <img src="/assets/images/arduino.png" alt="Arduino Uno R4">
+            </div>
+          </button>
+          <button id="bleCalliopeCard" class="ble-device" type="button">
+            <div class="ble-device-info">
+              <span class="ble-device-name">Calliope Mini</span>
+              <span class="ble-device-status">Bereit</span>
+            </div>
+            <div class="ble-device-thumb thumb-calliope">
+              <img src="/assets/images/calliope.png" alt="Calliope Mini">
+            </div>
+          </button>
+          <button id="bleMicrobitCard" class="ble-device" type="button">
+            <div class="ble-device-info">
+              <span class="ble-device-name">Micro:Bit</span>
+              <span class="ble-device-status">Bereit</span>
+            </div>
+            <div class="ble-device-thumb thumb-microbit">
+              <img src="/assets/images/microbit.png" alt="Micro:Bit">
+            </div>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Import TensorFlow.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js" type="text/javascript"></script>
+
+    <!-- Import the page's JavaScript to do some stuff -->
+    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/landing.js"></script>
+  </body>
+</html>
