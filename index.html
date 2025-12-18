@@ -95,7 +95,7 @@
                 </div>
               </div>
 
-              <div class="model-card is-disabled has-hero" data-mode="audio" data-available="false" role="listitem" tabindex="-1" aria-disabled="true">
+              <div class="model-card has-hero" data-mode="audio" data-available="true" role="listitem" tabindex="0">
                 <div class="model-card-hero">
                   <img src="assets/images/audioerkennung.png" alt="Audioerkennung Vorschau">
                 </div>
@@ -103,8 +103,8 @@
                   <h3 class="model-card-title">Audioerkennung</h3>
                   <p class="model-card-description">Geräusche oder Sprache erkennen.</p>
                   <div class="model-card-actions">
-                    <span class="md-tag primary" aria-disabled="true">Trainierbar</span>
-                    <span class="md-tag" aria-disabled="true">BLE connect</span>
+                    <span class="md-tag primary">Trainierbar</span>
+                    <span class="md-tag">BLE connect</span>
                   </div>
                 </div>
               </div>
@@ -174,7 +174,7 @@
                 </div>
               </div>
 
-              <div class="model-card is-disabled has-hero" data-mode="audio" data-available="false" role="listitem" tabindex="-1" aria-disabled="true">
+              <div class="model-card has-hero" data-mode="audio" data-available="true" role="listitem" tabindex="0">
                 <div class="model-card-hero">
                   <img src="assets/images/audioerkennung.png" alt="Audioerkennung Vorschau">
                 </div>
@@ -182,8 +182,8 @@
                   <h3 class="model-card-title">Audioerkennung</h3>
                   <p class="model-card-description">Geräusche oder Sprache erkennen.</p>
                   <div class="model-card-actions">
-                    <span class="md-tag primary" aria-disabled="true">Trainierbar</span>
-                    <span class="md-tag" aria-disabled="true">BLE connect</span>
+                    <span class="md-tag primary">Trainierbar</span>
+                    <span class="md-tag">BLE connect</span>
                   </div>
                 </div>
               </div>
@@ -209,6 +209,7 @@
             <button data-mode="gesture" role="menuitem">Gestenerkennung</button>
             <button data-mode="pose" role="menuitem">Posen-Erkennung</button>
             <button data-mode="face" role="menuitem">Gesichtserkennung</button>
+            <button data-mode="audio" role="menuitem">Audioerkennung</button>
 
           </div>
         </div>
@@ -310,6 +311,15 @@
               <div class="video-shell">
                 <video id="previewCam" autoplay muted playsinline class="hidden"></video>
                 <canvas id="gestureOverlay" class="overlay-canvas hidden"></canvas>
+                <canvas id="audioSpectrogram" class="audio-spectrogram audio-only"></canvas>
+              </div>
+              <div id="audioTimeline" class="audio-timeline audio-only hidden" aria-live="polite">
+                <div class="audio-timeline-meta">
+                  <span id="audioTimelineLabel">Aufnahme bereit</span>
+                </div>
+                <div class="audio-timeline-bar">
+                  <div id="audioTimelineFill" class="audio-timeline-fill"></div>
+                </div>
               </div>
               <div class="preview-output">
                 <div class="preview-output-header">
@@ -375,6 +385,7 @@
 
     <!-- Import TensorFlow.js library -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands@0.5.4/dist/speech-commands.min.js" type="text/javascript"></script>
 
     <!-- Import the page's JavaScript to do some stuff -->
     <script type="module" src="/src/main.js"></script>

@@ -26,3 +26,7 @@ export const epochsInput = document.getElementById('epochsInput');
 export const batchSizeInput = document.getElementById('batchSizeInput');
 export const learningRateInput = document.getElementById('learningRateInput');
 export const previewSwitchCameraButton = document.getElementById('previewSwitchCamera');
+export const audioSpectrogramCanvas = document.getElementById('audioSpectrogram');
+export const audioTimeline = document.getElementById('audioTimeline');
+export const audioTimelineFill = document.getElementById('audioTimelineFill');
+export const audioTimelineLabel = document.getElementById('audioTimelineLabel');

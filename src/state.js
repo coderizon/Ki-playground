@@ -6,6 +6,9 @@ export const state = {
   previewReady: false,
   trainingCompleted: false,
   trainingInProgress: false,
+  isAudioInitialized: false,
+  audioRecognizer: null,
+  audioSamples: [],
   mobilenet: undefined,
   gatherDataState: STOP_DATA_GATHER,
   videoPlaying: false,
@@ -71,4 +74,5 @@ export function disposeTrainingData() {
   state.gestureLastSampleTs = 0;
   state.poseSamples.length = 0;
   state.poseLastSampleTs = 0;
+  state.audioSamples.length = 0;
 }

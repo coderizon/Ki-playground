@@ -20,6 +20,7 @@ import { setMobileStep } from '../ui/steps.js';
 
 import { predictGesture, trainGestureModel } from './gesture.js';
 import { predictPose, trainPoseModel } from './pose.js';
+import { ensureAudioInitialized, startAudioPredictionLoop, trainAudioModel } from './audio.js';
 
 const defaultTrainLabel = TRAIN_BUTTON ? TRAIN_BUTTON.textContent : 'Modell trainieren';
 
@@ -47,7 +48,55 @@ export async function trainAndPredict() {
     return;
   }
 
+  if (state.currentMode === 'audio') {
+    await trainAudioWorkflow();
+    return;
+  }
+
   await trainImageWorkflow();
+}
+
+async function trainAudioWorkflow() {
+  await ensureAudioInitialized();
+
+  const counts = state.audioRecognizer?.countExamples?.() ?? null;
+  const classesWithExamples = counts
+    ? Object.values(counts).filter((n) => typeof n === 'number' && n > 0).length
+    : state.examplesCount.filter((n) => typeof n === 'number' && n > 0).length;
+
+  if (classesWithExamples < 2) {
+    if (STATUS) {
+      STATUS.innerText =
+        'Bitte sammle zuerst Beispiele für mindestens 2 Klassen (inkl. _background_noise_).';
+    }
+    return;
+  }
+
+  const { epochs } = getTrainingHyperparams();
+  state.predict = false;
+  state.trainingInProgress = true;
+  setTrainingButtonState(true);
+  startTrainingUi(epochs);
+
+  try {
+    await trainAudioModel({
+      epochs,
+      onEpochEnd: (epoch, logs) => updateTrainingProgressUi(epoch + 1, epochs, logs),
+    });
+
+    state.predict = true;
+    state.trainingCompleted = true;
+    completeTrainingUi(epochs);
+    lockCapturePanels();
+    state.previewReady = true;
+    setMobileStep('preview');
+    predictLoop();
+  } catch (error) {
+    handleTrainingError(error);
+  } finally {
+    state.trainingInProgress = false;
+    setTrainingButtonState(false);
+  }
 }
 
 async function trainGestureWorkflow() {
@@ -331,6 +380,18 @@ export async function predictLoop() {
         } else {
           renderProbabilities([], -1, state.classNames);
         }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    window.requestAnimationFrame(predictLoop);
+    return;
+  }
+
+  if (state.currentMode === 'audio') {
+    if (state.previewReady && state.trainingCompleted) {
+      try {
+        startAudioPredictionLoop();
       } catch (error) {
         console.error(error);
       }

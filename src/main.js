@@ -55,6 +55,7 @@ import {
   enableCam,
   hideWebcamPanel,
   openWebcamForClass,
+  stopCurrentStream,
   toggleCameraFacing,
   updateSwitchButtonsLabel,
 } from './camera/webcam.js';
@@ -68,12 +69,19 @@ import {
 } from './ui/classes.js';
 import { toggleModeMenu, closeModeMenu, updateModeMenuActive } from './ui/menu.js';
 import { setMobileStep } from './ui/steps.js';
+import {
+  clearAudioExamples,
+  collectBurstForClassIndex,
+  ensureAudioInitialized,
+  stopAudioLoop,
+} from './ml/audio.js';
 
 const classCardHandlers = {
   onNameChange: () => renderProbabilities(state.lastPrediction),
   onOpenWebcam: (idx) => openWebcamForClass(idx),
   onCollectStart: handleCollectStart,
   onCollectEnd: handleCollectEnd,
+  onAudioCollect: (idx, options) => collectBurstForClassIndex(idx, options),
   onSwitchCamera: () => {
     const message = toggleCameraFacing();
     if (STATUS) {
@@ -295,6 +303,8 @@ function addClassAndReset() {
   } else if (state.currentMode === 'pose' && state.model) {
     state.model.dispose();
     state.model = null;
+  } else if (state.currentMode === 'audio') {
+    stopAudioLoop();
   }
   renderProbabilities([], -1, state.classNames);
   if (STATUS) {
@@ -304,16 +314,21 @@ function addClassAndReset() {
 }
 
 async function setMode(newMode) {
-  const supportedModes = ['image', 'gesture', 'pose', 'face', 'object_detection'];
+  const supportedModes = ['image', 'gesture', 'pose', 'face', 'object_detection', 'audio'];
   if (!supportedModes.includes(newMode)) return;
   if (newMode === state.currentMode) {
     updateModeMenuActive();
     return;
   }
+  const previousMode = state.currentMode;
   stopGestureLoop();
   stopPoseLoop();
   stopFaceLoop();
   stopObjectLoop();
+  stopAudioLoop();
+  if (previousMode === 'audio') {
+    clearAudioExamples();
+  }
   state.currentMode = newMode;
   if (modeLabel) {
     modeLabel.textContent = MODE_NAMES[newMode] || newMode;
@@ -412,6 +427,33 @@ async function setMode(newMode) {
         STATUS.innerText = 'Objekterkennung aktiv. Vorschau läuft.';
       }
     }
+  } else if (newMode === 'audio') {
+    stopCurrentStream();
+    if (GESTURE_OVERLAY) {
+      GESTURE_OVERLAY.classList.add('hidden');
+    }
+    setMobileStep('collect');
+    PREVIEW_VIDEO.classList.add('hidden');
+    clearOverlay();
+    toggleCaptureControls(true);
+    setTrainButtonState(true);
+
+    // Create one extra user class next to the fixed background class.
+    addNewClassCard(classCardHandlers);
+    renderProbabilities([], -1, state.classNames);
+
+    try {
+      await ensureAudioInitialized();
+      if (STATUS) {
+        STATUS.innerText =
+          'Audioerkennung aktiv. Nimm zuerst _background_noise_ (20s) und danach Klassen (10s) auf.';
+      }
+    } catch (error) {
+      console.error(error);
+      if (STATUS) {
+        STATUS.innerText = 'Audio-Modell konnte nicht geladen werden. Details in der Konsole.';
+      }
+    }
   } else {
     if (STATUS) {
       STATUS.innerText = 'Bildklassifikation aktiv. Sammle Daten und trainiere.';
@@ -491,6 +533,28 @@ function resetApp() {
     runObjectLoop();
     if (STATUS) {
       STATUS.innerText = 'Objekterkennung aktiv.';
+    }
+  } else if (state.currentMode === 'audio') {
+    stopCurrentStream();
+    stopAudioLoop();
+    clearAudioExamples();
+    state.classNameInputs.forEach((input, idx) => {
+      if (!input) return;
+      if (idx === 0) {
+        input.disabled = true;
+        input.setAttribute('aria-disabled', 'true');
+        return;
+      }
+      input.disabled = false;
+      input.removeAttribute('aria-disabled');
+    });
+    setTrainButtonState(true);
+    toggleCaptureControls(true);
+    if (GESTURE_OVERLAY) {
+      GESTURE_OVERLAY.classList.add('hidden');
+    }
+    if (STATUS) {
+      STATUS.innerText = 'Audio-Daten zurückgesetzt. Bitte nimm neue Beispiele auf.';
     }
   }
   updateExampleCounts(true);

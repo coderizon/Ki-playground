@@ -19,4 +19,5 @@ export const MODE_NAMES = {
   pose: 'Posen-Erkennung',
   face: 'Gesichtserkennung',
   object_detection: 'Objekterkennung',
+  audio: 'Audioerkennung',
 };

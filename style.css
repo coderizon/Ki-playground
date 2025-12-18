@@ -212,6 +212,10 @@ body[data-step="preview"] .preview-column {
   display: flex;
 }
 
+body[data-mode="audio"][data-step="collect"] .preview-column {
+  display: flex;
+}
+
 .classes-column {
   display: flex;
   flex-direction: column;
@@ -554,6 +558,58 @@ button:disabled {
 .video-shell canvas {
   transform: scaleX(-1);
   display: block;
+}
+
+body:not([data-mode="audio"]) .audio-only {
+  display: none;
+}
+
+body[data-mode="audio"] #previewCam,
+body[data-mode="audio"] #gestureOverlay {
+  display: none;
+}
+
+.audio-spectrogram {
+  width: 100%;
+  height: 180px;
+  background: #0f1115;
+  transform: none !important;
+}
+
+.audio-timeline {
+  padding: 12px;
+  background: #f4f7ff;
+  border: 1px solid #d9e0ec;
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.audio-timeline-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.audio-timeline-bar {
+  position: relative;
+  height: 12px;
+  background: #e5ebff;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.audio-timeline-fill {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: linear-gradient(90deg, #5067ff, #d14ebd, #f2b134);
+  box-shadow: 0 4px 12px rgba(80, 103, 255, 0.2);
+  transition: width 0.15s linear;
 }
 
 .overlay-canvas {
