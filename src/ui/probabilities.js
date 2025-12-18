@@ -6,6 +6,8 @@ import {
 import { probabilityList } from '../domRefs.js';
 import { state } from '../state.js';
 import { sendToArduino, isArduinoConnected } from '../bluetooth/arduino.js';
+import { sendToMicrobit, isMicrobitConnected } from '../bluetooth/microbit.js';
+import { sendToCalliope, isCalliopeConnected } from '../bluetooth/calliope.js';
 
 export function renderProbabilities(
   probArray = state.lastPrediction,
@@ -19,7 +21,7 @@ export function renderProbabilities(
   state.lastPrediction = safeValues;
 
   if (state.predict && bestIndex >= 0) {
-    maybeSendArduinoPrediction(safeValues, bestIndex, names);
+    maybeSendBlePrediction(safeValues, bestIndex, names);
   }
 
   if (!probabilityList) return;
@@ -63,8 +65,12 @@ export function renderProbabilities(
   });
 }
 
-function maybeSendArduinoPrediction(probArray, bestIndex, names) {
-  if (!state.arduinoConnected || !isArduinoConnected() || state.currentMode !== 'image') return;
+function maybeSendBlePrediction(probArray, bestIndex, names) {
+  const hasAnyBleConnection =
+    (state.arduinoConnected && isArduinoConnected()) ||
+    (state.microbitConnected && isMicrobitConnected()) ||
+    (state.calliopeConnected && isCalliopeConnected());
+  if (!hasAnyBleConnection) return;
   if (!Array.isArray(probArray) || bestIndex < 0) return;
 
   const probability = probArray[bestIndex] || 0;
@@ -76,7 +82,16 @@ function maybeSendArduinoPrediction(probArray, bestIndex, names) {
 
   state.lastSentLabel = label;
   state.lastSentAt = now;
-  sendToArduino(`${label}:${Math.round(probability * 100)}`);
+  const payload = `${label}:${Math.round(probability * 100)}`;
+  if (state.arduinoConnected && isArduinoConnected()) {
+    sendToArduino(payload);
+  }
+  if (state.microbitConnected && isMicrobitConnected()) {
+    sendToMicrobit(payload);
+  }
+  if (state.calliopeConnected && isCalliopeConnected()) {
+    sendToCalliope(payload);
+  }
 }
 
 function getBarColors(idx) {
