@@ -1,6 +1,6 @@
 import { STOP_DATA_GATHER } from '../constants.js';
 import { state } from '../state.js';
-import { CAPTURE_VIDEO, PREVIEW_VIDEO, STATUS } from '../domRefs.js';
+import { CAPTURE_VIDEO, PREVIEW_VIDEO, STATUS, previewSwitchCameraButton } from '../domRefs.js';
 
 export const captureCanvas = document.createElement('canvas');
 captureCanvas.className = 'overlay-canvas';
@@ -14,6 +14,12 @@ export function stopCurrentStream() {
   state.currentStream.getTracks().forEach((track) => track.stop());
   state.currentStream = null;
   state.videoPlaying = false;
+  if (CAPTURE_VIDEO) {
+    CAPTURE_VIDEO.srcObject = null;
+  }
+  if (PREVIEW_VIDEO) {
+    PREVIEW_VIDEO.srcObject = null;
+  }
 }
 
 function attachStreamToVideos(stream) {
@@ -31,6 +37,9 @@ export function updateSwitchButtonsLabel() {
   state.switchCameraButtons.forEach((btn) => {
     if (btn) btn.textContent = targetLabel;
   });
+  if (previewSwitchCameraButton) {
+    previewSwitchCameraButton.textContent = targetLabel;
+  }
 }
 
 export async function enableCam(allowFallback = true) {

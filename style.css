@@ -153,6 +153,15 @@ body[data-mode="object_detection"] .preview-column {
   display: flex;
 }
 
+#previewSwitchCamera {
+  display: none;
+}
+
+body[data-mode="face"] #previewSwitchCamera,
+body[data-mode="object_detection"] #previewSwitchCamera {
+  display: inline-flex;
+}
+
 body[data-mode="object_detection"] .video-shell canvas {
   transform: none;
 }

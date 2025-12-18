@@ -34,6 +34,7 @@ import {
   modeLabel,
   modeMenu,
   mobileStepButtons,
+  previewSwitchCameraButton,
 } from './domRefs.js';
 import { clearOverlay } from './ml/overlay.js';
 import { ensureHandLandmarker, runGestureLoop, stopGestureLoop } from './ml/gesture.js';
@@ -110,6 +111,20 @@ if (addClassButton) {
       event.preventDefault();
       addClassAndReset();
     }
+  });
+}
+
+if (previewSwitchCameraButton) {
+  previewSwitchCameraButton.addEventListener('click', () => {
+    if (state.currentMode !== 'face' && state.currentMode !== 'object_detection') return;
+    clearOverlay();
+    renderProbabilities([], -1, []);
+    state.previewReady = false;
+    const message = toggleCameraFacing();
+    if (STATUS) {
+      STATUS.innerText = message;
+    }
+    preparePreviewForFace();
   });
 }
 
