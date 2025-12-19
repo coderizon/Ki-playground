@@ -10,6 +10,11 @@ import { renderProbabilities } from '../ui/probabilities.js';
 
 const BACKGROUND_LABEL = '_background_noise_';
 const DEFAULT_GAIN = 2.5;
+const AUDIO_CLASS_SECONDS = 10;
+const AUDIO_BACKGROUND_SECONDS_DESKTOP = 20;
+const AUDIO_BACKGROUND_SECONDS_MOBILE = 10;
+const COLLECT_EXAMPLE_TIMEOUT_MS = 8000;
+const MOBILE_COLLECT_RETRIES = 1;
 
 let baseRecognizer = null;
 let transferRecognizer = null;
@@ -19,9 +24,19 @@ let activeBurstAbort = null;
 let originalGetUserMedia = null;
 let isGetUserMediaPatched = false;
 const activeAudioCleanups = new Set();
+let sharedAudioContext = null;
 
 export function getBackgroundLabel() {
   return BACKGROUND_LABEL;
+}
+
+export function getAudioCollectionSeconds(classIndex) {
+  if (classIndex === 0) {
+    return isLikelyMobileDevice()
+      ? AUDIO_BACKGROUND_SECONDS_MOBILE
+      : AUDIO_BACKGROUND_SECONDS_DESKTOP;
+  }
+  return AUDIO_CLASS_SECONDS;
 }
 
 export async function ensureAudioInitialized() {
@@ -59,7 +74,7 @@ export async function collectBurstForClassIndex(classIndex, { onTick } = {}) {
 
   const label =
     classIndex === 0 ? BACKGROUND_LABEL : state.classNames[classIndex] || `Class ${classIndex}`;
-  const totalSeconds = classIndex === 0 ? 20 : 10;
+  const totalSeconds = getAudioCollectionSeconds(classIndex);
   const totalSamples = totalSeconds;
 
   const abortController = new AbortController();
@@ -67,6 +82,8 @@ export async function collectBurstForClassIndex(classIndex, { onTick } = {}) {
 
   setTimelineVisible(true);
   updateTimeline(0, totalSamples, label);
+
+  const wakeLock = await requestWakeLock();
 
   try {
     for (let i = 0; i < totalSamples; i++) {
@@ -79,7 +96,11 @@ export async function collectBurstForClassIndex(classIndex, { onTick } = {}) {
       updateTimeline(tick, totalSamples, label);
 
       // collectExample takes ~1s and grabs one training example per call.
-      await recognizer.collectExample(label);
+      await collectExampleWithRetries(recognizer, label, {
+        signal: abortController.signal,
+        timeoutMs: COLLECT_EXAMPLE_TIMEOUT_MS,
+        maxRetries: isLikelyMobileDevice() ? MOBILE_COLLECT_RETRIES : 0,
+      });
 
       if (state.examplesCount[classIndex] === undefined) {
         state.examplesCount[classIndex] = 0;
@@ -89,6 +110,7 @@ export async function collectBurstForClassIndex(classIndex, { onTick } = {}) {
     }
   } finally {
     if (activeBurstAbort === abortController) activeBurstAbort = null;
+    await releaseWakeLock(wakeLock);
     setTimelineVisible(false);
   }
 }
@@ -214,10 +236,8 @@ function patchAudioConstraints(constraints) {
 }
 
 function applyGainToStream(rawStream, gainValue) {
-  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextCtor) return rawStream;
-
-  const audioContext = new AudioContextCtor({ latencyHint: 'interactive' });
+  const audioContext = getOrCreateSharedAudioContext();
+  if (!audioContext) return rawStream;
   const source = audioContext.createMediaStreamSource(rawStream);
   const gain = audioContext.createGain();
   gain.gain.value = gainValue;
@@ -242,9 +262,6 @@ function applyGainToStream(rawStream, gainValue) {
     try {
       processedStream?.getTracks?.().forEach((t) => t.stop());
     } catch {}
-    try {
-      audioContext?.close?.();
-    } catch {}
     activeAudioCleanups.delete(cleanup);
   };
 
@@ -268,6 +285,10 @@ function stopAllPatchedAudioResources() {
     } catch {}
   }
   activeAudioCleanups.clear();
+  if (sharedAudioContext && sharedAudioContext.state !== 'closed') {
+    sharedAudioContext.close?.().catch(() => {});
+  }
+  sharedAudioContext = null;
 }
 
 function setTimelineVisible(visible) {
@@ -370,4 +391,93 @@ function sanitizeInteger(value, fallback) {
   const parsed = parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
   return parsed;
+}
+
+function isLikelyMobileDevice() {
+  if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+    return navigator.userAgentData.mobile;
+  }
+  const ua = navigator.userAgent || '';
+  return /Android|iPhone|iPad|iPod|Mobile|IEMobile|BlackBerry|Opera Mini/i.test(ua);
+}
+
+function getOrCreateSharedAudioContext() {
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) return null;
+  if (sharedAudioContext && sharedAudioContext.state !== 'closed') {
+    return sharedAudioContext;
+  }
+  sharedAudioContext = new AudioContextCtor({ latencyHint: 'interactive' });
+  return sharedAudioContext;
+}
+
+async function requestWakeLock() {
+  const wakeLockApi = navigator.wakeLock;
+  if (!wakeLockApi?.request) return null;
+  try {
+    return await wakeLockApi.request('screen');
+  } catch (error) {
+    console.warn('[Audio] wakeLock request failed', error);
+    return null;
+  }
+}
+
+async function releaseWakeLock(wakeLock) {
+  if (!wakeLock?.release) return;
+  try {
+    await wakeLock.release();
+  } catch (error) {
+    console.warn('[Audio] wakeLock release failed', error);
+  }
+}
+
+async function collectExampleWithRetries(
+  recognizer,
+  label,
+  { signal, timeoutMs, maxRetries } = {}
+) {
+  const retries = sanitizeInteger(maxRetries, 0);
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (signal?.aborted) {
+      throw new Error('Audio-Aufnahme abgebrochen.');
+    }
+    try {
+      await withTimeout(
+        recognizer.collectExample(label),
+        timeoutMs,
+        'Audio-Aufnahme dauert zu lange. Bitte erneut versuchen.'
+      );
+      return;
+    } catch (error) {
+      if (attempt >= retries) throw error;
+      console.warn('[Audio] collectExample failed, retrying...', error);
+      try {
+        recognizer.stopListening?.();
+      } catch {}
+      stopAllPatchedAudioResources();
+      await sleep(250);
+    }
+  }
+}
+
+function withTimeout(promise, timeoutMs, timeoutMessage) {
+  const ms = sanitizeInteger(timeoutMs, 0);
+  if (!ms) return promise;
+
+  let timeoutId = null;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(new Error(timeoutMessage));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
+  });
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }

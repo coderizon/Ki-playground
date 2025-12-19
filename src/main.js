@@ -73,6 +73,7 @@ import {
   clearAudioExamples,
   collectBurstForClassIndex,
   ensureAudioInitialized,
+  getAudioCollectionSeconds,
   stopAudioLoop,
 } from './ml/audio.js';
 
@@ -445,8 +446,9 @@ async function setMode(newMode) {
     try {
       await ensureAudioInitialized();
       if (STATUS) {
-        STATUS.innerText =
-          'Audioerkennung aktiv. Nimm zuerst _background_noise_ (20s) und danach Klassen (10s) auf.';
+        const backgroundSeconds = getAudioCollectionSeconds(0);
+        const classSeconds = getAudioCollectionSeconds(1);
+        STATUS.innerText = `Audioerkennung aktiv. Nimm zuerst _background_noise_ (${backgroundSeconds}s) und danach Klassen (${classSeconds}s) auf.`;
       }
     } catch (error) {
       console.error(error);

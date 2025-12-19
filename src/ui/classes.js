@@ -1,9 +1,9 @@
 import { CAPTURE_VIDEO, STATUS, addClassButton, classesColumn } from '../domRefs.js';
 import { state } from '../state.js';
 
-const AUDIO_BACKGROUND_LABEL = '_background_noise_';
-const AUDIO_BACKGROUND_SECONDS = 20;
-const AUDIO_CLASS_SECONDS = 10;
+import { getAudioCollectionSeconds, getBackgroundLabel } from '../ml/audio.js';
+
+const AUDIO_BACKGROUND_LABEL = getBackgroundLabel();
 
 export function initializeExistingClasses(handlers = {}) {
   const existingCards = document.querySelectorAll('.class-card');
@@ -157,7 +157,7 @@ function setupAudioClassCard(card, idx, handlers = {}) {
 
   collectorBtn.textContent = 'Aufnehmen';
   collectorBtn.addEventListener('click', async () => {
-    const secondsTotal = isBackground ? AUDIO_BACKGROUND_SECONDS : AUDIO_CLASS_SECONDS;
+    const secondsTotal = getAudioCollectionSeconds(idx);
 
     state.dataCollectorButtons.forEach((btn) => {
       if (btn) btn.disabled = true;
@@ -181,7 +181,7 @@ function setupAudioClassCard(card, idx, handlers = {}) {
     } catch (error) {
       console.error(error);
       if (STATUS) {
-        STATUS.innerText = 'Aufnahme fehlgeschlagen oder abgebrochen.';
+        STATUS.innerText = error?.message || 'Aufnahme fehlgeschlagen oder abgebrochen.';
       }
     } finally {
       collectorBtn.textContent = 'Aufnehmen';
